@@ -22,7 +22,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     
     @Query("SELECT d FROM Document d WHERE d.user = :user AND " +
            "(LOWER(d.originalName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
-           "LOWER(d.extractedText) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+           "d.extractedText LIKE CONCAT('%', :searchTerm, '%'))")
     Page<Document> findByUserAndSearchTerm(@Param("user") User user, 
                                           @Param("searchTerm") String searchTerm, 
                                           Pageable pageable);

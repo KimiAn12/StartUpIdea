@@ -152,6 +152,8 @@ docker run --name legalease-postgres \
    - Open `http://localhost:3000`
    - Should see the LegalEase AI homepage
 
+## ____________________________________________________________________
+
 ## Production Deployment
 
 ### Backend Deployment
