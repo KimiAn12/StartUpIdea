@@ -47,7 +47,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (credentials: { usernameOrEmail: string; password: string }) => {
     try {
       setIsLoading(true)
+      console.log('Attempting login with:', credentials.usernameOrEmail)
+      
       const response = await authApi.login(credentials)
+      console.log('Login response received:', response)
       
       // Store token in cookie
       Cookies.set('authToken', response.accessToken, { 
@@ -66,12 +69,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       setUser(userData)
+      console.log('User set, redirecting to dashboard...')
       router.push('/dashboard')
     } catch (error: any) {
-      console.error('Login failed:', error)
-      throw new Error(error.response?.data?.message || 'Login failed')
-    } finally {
+      console.error('Login failed - Full error:', error)
+      console.error('Login failed - Response data:', error.response?.data)
+      console.error('Login failed - Status:', error.response?.status)
+      
+      // Don't redirect on error - let the UI handle it
       setIsLoading(false)
+      throw new Error(error.response?.data?.message || 'Login failed')
     }
   }
 

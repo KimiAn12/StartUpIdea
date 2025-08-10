@@ -32,7 +32,7 @@ export default function RegisterPage() {
 
   const password = watch('password')
 
-  const onSubmit = async (data: RegisterForm) => {
+  const onSubmit = async (data: RegisterForm, event?: React.FormEvent) => {
     try {
       setRegisterError('')
       const { confirmPassword, ...userData } = data
@@ -41,6 +41,12 @@ export default function RegisterPage() {
     } catch (error: any) {
       setRegisterError(error.message)
       toast.error(error.message)
+      
+      // Prevent form submission and page refresh
+      if (event) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
     }
   }
 

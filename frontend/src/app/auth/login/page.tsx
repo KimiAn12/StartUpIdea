@@ -24,15 +24,41 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<LoginForm>()
 
-  const onSubmit = async (data: LoginForm) => {
+  const onSubmit = async (data: LoginForm, event?: React.FormEvent) => {
+    // Aggressively prevent any default behavior
+    if (event) {
+      event.preventDefault()
+      event.stopPropagation()
+      event.nativeEvent?.preventDefault?.()
+      event.nativeEvent?.stopPropagation?.()
+    }
+    
     try {
       setLoginError('')
+      console.log('Form submitted with:', data)
+      
       await login(data)
+      console.log('Login successful, redirecting...')
       toast.success('Successfully logged in!')
     } catch (error: any) {
-      setLoginError(error.message)
-      toast.error(error.message)
+      console.error('Login error in form:', error)
+      const errorMessage = error.message || 'Login failed'
+      setLoginError(errorMessage)
+      toast.error(errorMessage)
+      
+      // Double-check prevention
+      if (event) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
     }
+  }
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    console.log('Form submit intercepted')
+    return false
   }
 
   return (
@@ -56,13 +82,26 @@ export default function LoginPage() {
           </p>
         </div>
         
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+        <form 
+          className="mt-8 space-y-6" 
+          onSubmit={handleFormSubmit}
+          onError={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+          }}
+          onSubmitCapture={(e) => {
+            console.log('Form submit captured, preventing default')
+            e.preventDefault()
+            e.stopPropagation()
+          }}
+        >
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="usernameOrEmail" className="sr-only">
                 Username or Email
               </label>
               <input
+                id="usernameOrEmail"
                 {...register('usernameOrEmail', {
                   required: 'Username or email is required',
                 })}
@@ -81,6 +120,7 @@ export default function LoginPage() {
                 Password
               </label>
               <input
+                id="password"
                 {...register('password', {
                   required: 'Password is required',
                 })}
@@ -114,10 +154,18 @@ export default function LoginPage() {
 
           <div>
             <Button
-              type="submit"
+              type="button"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
               loading={isLoading}
               disabled={isLoading}
+              onClick={() => {
+                const formData = {
+                  usernameOrEmail: (document.getElementById('usernameOrEmail') as HTMLInputElement)?.value || '',
+                  password: (document.getElementById('password') as HTMLInputElement)?.value || ''
+                }
+                console.log('Manual submit with:', formData)
+                onSubmit(formData)
+              }}
             >
               Sign in
             </Button>
