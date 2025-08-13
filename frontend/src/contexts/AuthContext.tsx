@@ -53,11 +53,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Login response received:', response)
       
       // Store token in cookie
+      console.log('Storing token in cookie:', response.accessToken.substring(0, 20) + '...')
       Cookies.set('authToken', response.accessToken, { 
         expires: 7, // 7 days
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        secure: false, // Set to false for development (localhost)
+        sameSite: 'lax' // More permissive for development
       })
+      
+      // Verify token was stored
+      const storedToken = Cookies.get('authToken')
+      console.log('Token stored successfully:', !!storedToken)
+      console.log('Stored token preview:', storedToken ? storedToken.substring(0, 20) + '...' : 'NO TOKEN')
 
       // Set user data
       const userData: User = {

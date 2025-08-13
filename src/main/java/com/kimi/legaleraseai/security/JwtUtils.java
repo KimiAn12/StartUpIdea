@@ -24,11 +24,18 @@ public class JwtUtils {
 
     public String generateJwtToken(Authentication authentication) {
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+        
+        logger.debug("=== JWT Token Generation Debug ===");
+        logger.debug("Username: {}", userPrincipal.getUsername());
+        logger.debug("JWT Secret length: {}", jwtSecret.length());
+        logger.debug("JWT Expiration (seconds): {}", jwtExpirationMs);
+        logger.debug("Current time: {}", new Date());
+        logger.debug("Expiration time: {}", new Date((new Date()).getTime() + (jwtExpirationMs * 1000L)));
 
         return Jwts.builder()
                 .setSubject((userPrincipal.getUsername()))
                 .setIssuedAt(new Date())
-                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs * 1000L))
+                .setExpiration(new Date((new Date()).getTime() + (jwtExpirationMs * 1000L)))
                 .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -44,7 +51,11 @@ public class JwtUtils {
 
     public boolean validateJwtToken(String authToken) {
         try {
+            logger.debug("=== JWT Validation Debug ===");
+            logger.debug("Token to validate: {}", authToken.substring(0, Math.min(20, authToken.length())) + "...");
+            
             Jwts.parser().setSigningKey(key()).build().parse(authToken);
+            logger.debug("JWT token validation successful");
             return true;
         } catch (MalformedJwtException e) {
             logger.error("Invalid JWT token: {}", e.getMessage());
@@ -56,6 +67,7 @@ public class JwtUtils {
             logger.error("JWT claims string is empty: {}", e.getMessage());
         }
 
+        logger.debug("JWT token validation failed");
         return false;
     }
 }

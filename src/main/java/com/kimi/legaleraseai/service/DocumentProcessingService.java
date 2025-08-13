@@ -31,12 +31,17 @@ public class DocumentProcessingService {
     private final Tika tika = new Tika();
 
     public Document processDocument(MultipartFile file, User user) throws IOException {
+        logger.info("=== Starting document processing ===");
+        logger.info("File: {}, Size: {}, Type: {}", file.getOriginalFilename(), file.getSize(), file.getContentType());
+        
         validateFile(file);
+        logger.info("File validation passed");
         
         // Create upload directory if it doesn't exist
         Path uploadPath = Paths.get(UPLOAD_DIR);
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
+            logger.info("Created upload directory: {}", uploadPath);
         }
 
         // Generate unique filename
@@ -44,9 +49,11 @@ public class DocumentProcessingService {
         String fileExtension = getFileExtension(originalFilename);
         String uniqueFilename = UUID.randomUUID().toString() + fileExtension;
         Path filePath = uploadPath.resolve(uniqueFilename);
+        logger.info("Generated filename: {} -> {}", originalFilename, uniqueFilename);
 
         // Save file to disk
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        logger.info("File saved to disk: {}", filePath);
 
         // Create document entity
         Document document = new Document(
@@ -61,20 +68,25 @@ public class DocumentProcessingService {
 
         // Save document to database
         document = documentRepository.save(document);
+        logger.info("Document saved to database with ID: {}", document.getId());
 
         // Extract text asynchronously (in real implementation, use @Async)
+        logger.info("Starting text extraction...");
         try {
             String extractedText = extractTextFromFile(filePath.toFile());
+            logger.info("Text extraction successful, length: {} characters", extractedText.length());
             document.setExtractedText(extractedText);
             document.setProcessingStatus(Document.ProcessingStatus.COMPLETED);
-            logger.info("Successfully extracted text from document: {}", originalFilename);
+            logger.info("Document processing COMPLETED: {}", originalFilename);
         } catch (Exception e) {
-            logger.error("Error extracting text from document: {}", originalFilename, e);
+            logger.error("Text extraction FAILED for document: {}", originalFilename, e);
             document.setProcessingStatus(Document.ProcessingStatus.FAILED);
             document.setProcessingError(e.getMessage());
         }
 
-        return documentRepository.save(document);
+        Document finalDocument = documentRepository.save(document);
+        logger.info("Final document status: {}", finalDocument.getProcessingStatus());
+        return finalDocument;
     }
 
     private void validateFile(MultipartFile file) throws IOException {
@@ -108,9 +120,22 @@ public class DocumentProcessingService {
     }
 
     private String extractTextFromFile(File file) throws IOException, TikaException {
+        logger.info("Extracting text from file: {}", file.getName());
+        logger.info("File exists: {}, File size: {} bytes", file.exists(), file.length());
+        
         try {
+            logger.info("Starting Tika text extraction...");
             String text = tika.parseToString(file);
-            return text.trim();
+            logger.info("Tika extraction completed, raw text length: {}", text != null ? text.length() : 0);
+            
+            if (text != null) {
+                String trimmedText = text.trim();
+                logger.info("Text trimmed, final length: {}", trimmedText.length());
+                return trimmedText;
+            } else {
+                logger.warn("Tika returned null text");
+                return "";
+            }
         } catch (Exception e) {
             logger.error("Error parsing file with Tika: {}", file.getName(), e);
             throw new TikaException("Failed to extract text from file: " + e.getMessage());

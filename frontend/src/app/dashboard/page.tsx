@@ -36,6 +36,24 @@ export default function DashboardPage() {
     () => documentsApi.getDocuments(page, 10, searchTerm),
     {
       keepPreviousData: true,
+      onError: (error: any) => {
+        console.error('Dashboard documents error:', error)
+        console.error('Error response:', error.response?.data)
+        console.error('Error status:', error.response?.status)
+        console.error('Error message:', error.message)
+        
+        // Check if JWT token exists in cookies (where the API stores it)
+        const token = document.cookie.split('; ').find(row => row.startsWith('authToken='))?.split('=')[1]
+        console.log('JWT token exists in cookies:', !!token)
+        if (token) {
+          console.log('Token length:', token.length)
+          console.log('Token starts with:', token.substring(0, 20) + '...')
+        }
+        
+        // Log request details
+        console.log('Request config:', error.config)
+        console.log('Request headers:', error.config?.headers)
+      }
     }
   )
 
